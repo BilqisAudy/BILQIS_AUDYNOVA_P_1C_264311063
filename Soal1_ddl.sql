@@ -11,7 +11,7 @@ USE etle_db;
 CREATE TABLE kamera (
     id_kamera        VARCHAR(20)  NOT NULL,
     lokasi_kamera    VARCHAR(150) NOT NULL,
-    batas_kecepatan  SMALLINT UNSIGNED NOT NULL,  -- km/jam
+    batas_kecepatan  SMALLINT UNSIGNED NOT NULL,  --km/jam
     PRIMARY KEY (id_kamera)
 );
 
