@@ -2,7 +2,7 @@
 -- KELAS  : 1C
 -- NIM    : 264311063
 -- PRODI  : TEKNOLOGI REKAYASA PERANGKAT LUNAK
-
+-- UTS PRAKTIK BASIS DATA SOAL 2
 USE etle_db;
 
 -- Tabel induk: kamera
