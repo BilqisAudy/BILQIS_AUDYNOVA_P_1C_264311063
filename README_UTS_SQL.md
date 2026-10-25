@@ -129,35 +129,4 @@ Masalah: data kamera dan waktu capture terulang di setiap foto (redundansi).
 
 **Hasil akhir 3NF:** KAMERA, ATURAN_PASAL, DETAIL_PELANGGARAN, dan BUKTI_FOTO. Tidak ada lagi pengulangan data kamera di setiap foto, dan semua atribut non-kunci bergantung penuh pada kunci.
 
-## 3. Pemodelan Fisik
-
-Pemodelan fisik diterjemahkan menjadi script SQL DDL pada file [Remedial_UTS_ddl.sql](Remedial_UTS_ddl.sql). Tabel tambahan pada remedi ini adalah `bukti_foto`, yang menyimpan foto bukti dari setiap pelanggaran ETLE.
-
-### Penjelasan tabel `bukti_foto`
-
-| Elemen | Penjelasan |
-|---|---|
-| Primary Key | Gabungan `no_referensi_sistem` + `urutan_foto`, karena `bukti_foto` adalah entitas lemah dan setiap foto diidentifikasi lewat pelanggaran induknya beserta nomor urutnya |
-| Foreign Key | `no_referensi_sistem` merujuk ke `detail_pelanggaran(no_referensi_sistem)` dengan `ON DELETE CASCADE` dan `ON UPDATE CASCADE`, sehingga foto ikut terhapus bila pelanggarannya dihapus |
-| UNIQUE | `nama_file`, agar tidak ada dua foto dengan nama file yang sama |
-| CHECK | `urutan_foto` antara 1 sampai 10, `jenis_foto` hanya `Kendaraan`, `Plat Nomor`, atau `Situasi`, dan `ukuran_kb` lebih dari 0 |
-| NOT NULL | Semua kolom wajib diisi agar data bukti lengkap |
-| Index | `idx_bukti_waktu` pada `waktu_rekam` untuk mempercepat pencarian foto berdasarkan waktu |
-
-### Bukti pengujian di phpMyAdmin
-
-**Struktur tabel `bukti_foto`** (ikon kunci menunjukkan primary key gabungan)
-
-![Struktur bukti_foto](bukti_uts_remedial/structure_bukti_foto.png)
-
-**Index tabel `bukti_foto`** (PRIMARY dan UNIQUE pada nama_file)
-
-![Index bukti_foto](bukti_uts_remedial/indexes_bukti_foto.png)
-
-**Foreign key `fk_bukti_detail`** (relasi ke `detail_pelanggaran` dengan CASCADE)
-
-![Relasi bukti_foto](bukti_uts_remedial/relation_bukti_foto.png)
-
----
-
 Script SQL: [Remedial_UTS_ddl.sql](Remedial_UTS_ddl.sql)
