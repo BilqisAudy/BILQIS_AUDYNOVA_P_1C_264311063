@@ -1,210 +1,183 @@
 -- =====================================================================
 -- REMEDI UTS - SCPMK0320703
--- Nama : Bilqis Audynova Prasanty | NIM : 264311063 | Kelas : 1C
--- Prodi: Teknologi Rekayasa Perangkat Lunak (TRPL)
--- Basis data : replika database ETLE kelompok + 1 tabel tambahan
--- ===================================================================== 
+-- NAMA  : BILQIS AUDYNOVA PRASANTY
+-- KELAS : 1C
+-- NIM   : 264311063
+-- PRODI : TEKNOLOGI REKAYASA PERANGKAT LUNAK
+-- Basis data : replika etle_db (pekerjaan UTS) + 1 tabel tambahan
+-- =====================================================================
 
 -- =====================================================================
 -- PENAMBAHAN PROSES BISNIS
--- Setiap pelanggaran ETLE wajib disertai satu atau lebih foto bukti (foto kendaraan, foto plat nomor, foto situasi).
-
+--   Setiap pelanggaran ETLE wajib disertai satu atau lebih foto bukti
+--   (foto kendaraan, foto plat nomor, foto situasi).
+--
 -- Aturan bisnis:
--- 1. Satu pelanggaran memiliki 1..N foto bukti.
--- 2. Foto bukti tidak dapat berdiri sendiri tanpa pelanggarannya (entitas lemah).
--- 3. Jika pelanggaran dihapus, foto buktinya ikut terhapus.
--- ===================================================================== 
-
+--   1. Satu pelanggaran (detail_pelanggaran) memiliki 1..N foto bukti.
+--   2. Foto bukti tidak dapat berdiri sendiri tanpa pelanggarannya
+--      (entitas lemah).
+--   3. Jika pelanggaran dihapus, foto buktinya ikut terhapus.
+-- =====================================================================
 
 -- =====================================================================
 -- TAHAP 1 - PEMODELAN KONSEPTUAL (ERD)
-   ---------------------------------------------------------------------
--- Entitas baru : BUKTI_FOTO (entitas LEMAH)
--- Pemilik      : PELANGGARAN (identifying owner)
--- Atribut      : urutan_foto (diskriminator/partial key), jenis_foto, nama_file, ukuran_kb, waktu_rekam
--- Relasi       : PELANGGARAN --(memiliki, identifying)--> BUKTI_FOTO
--- Kardinalitas : 1 : N (satu pelanggaran memiliki 1..N foto; satu foto milik tepat satu pelanggaran)
--- Partisipasi  : total di sisi BUKTI_FOTO
-
--- Relasi entitas lama (replika kelompok):
--- - PETUGAS     1 : N  PELANGGARAN
--- - KENDARAAN   1 : N  PELANGGARAN
--- - PELANGGARAN M : N  JENIS_PELANGGARAN (via PELANGGARAN_JENIS)
--- - KENDARAAN   spesialisasi -> RODA_2 / RODA_4
-
--- ERD teks:
--- [PETUGAS]--1:N--<menerbitkan>--[PELANGGARAN]--1:N--<memiliki>==[[BUKTI_FOTO]]
--- [KENDARAAN]--1:N--<terlibat>--[PELANGGARAN]
--- ([[ ]] dan == = entitas lemah dan relasi identifying)
--- ===================================================================== 
-
+-- =====================================================================
+--   Entitas lama : KAMERA, ATURAN_PASAL, DETAIL_PELANGGARAN
+--   Entitas baru : BUKTI_FOTO (entitas LEMAH)
+--   Pemilik      : DETAIL_PELANGGARAN (identifying owner)
+--   Atribut baru : urutan_foto (diskriminator), jenis_foto, nama_file,
+--                  ukuran_kb, waktu_rekam
+--
+--   Relasi dan kardinalitas:
+--     KAMERA       1 : N  DETAIL_PELANGGARAN   (merekam)
+--     ATURAN_PASAL 1 : N  DETAIL_PELANGGARAN   (mendasari)
+--     DETAIL_PELANGGARAN 1 : N  BUKTI_FOTO     (memiliki, identifying,
+--                                               partisipasi total di BUKTI_FOTO)
+--
+--   ERD teks:
+--     [KAMERA]--1:N--<merekam>--[DETAIL_PELANGGARAN]--1:N--<memiliki>==[[BUKTI_FOTO]]
+--     [ATURAN_PASAL]--1:N--<mendasari>--[DETAIL_PELANGGARAN]
+--     ([[ ]] dan == = entitas lemah dan relasi identifying)
 
 -- =====================================================================
 -- TAHAP 2 - PEMODELAN LOGIS
-   ---------------------------------------------------------------------
--- Skema relasional tabel baru:
--- BUKTI_FOTO (no_tilang PK/FK, urutan_foto PK, jenis_foto, nama_file, ukuran_kb, waktu_rekam)
--- FK: no_tilang -> PELANGGARAN(no_tilang)
-
--- ===================================================================== 
-
+-- =====================================================================
+--   Skema relasional:
+--     KAMERA (id_kamera PK, lokasi_kamera, batas_kecepatan)
+--     ATURAN_PASAL (kode_pelanggaran PK, kategori_pelanggaran, pasal_pelanggaran)
+--     DETAIL_PELANGGARAN (no_referensi_sistem PK, id_kamera FK,
+--                         kode_pelanggaran FK, waktu_capture, kecepatan_tercatat)
+--     BUKTI_FOTO (no_referensi_sistem PK/FK, urutan_foto PK, jenis_foto,
+--                 nama_file, ukuran_kb, waktu_rekam)            <- BARU
+--
 -- Normalisasi:
 --
 --   UNF : satu baris pelanggaran berisi banyak foto bukti sekaligus.
---     no_tilang | tanggal    | nrp_petugas | nama_petugas     | foto
---     TL-001    | 2026-03-04 | 80091312    | Septa Firmansyah | (1 Kendaraan: ae1270cr_depan.jpg), (2 Plat Nomor: ae1270cr_plat.jpg), (3 Situasi: ae1270cr_situasi.jpg)
+--     no_referensi_sistem | id_kamera   | lokasi_kamera                | waktu_capture       | kecepatan | foto
+--     910-50639-AE1270CR  | CAM-TOL-548 | SPEEDCAM TOL KM 548+450 A JSN | 2026-03-04 09:42:11 | 144       | (1 Kendaraan: depan.jpg), (2 Plat Nomor: plat.jpg), (3 Situasi: situasi.jpg)
 --
---   1NF : satu baris = satu foto di satu pelanggaran. Kunci (no_tilang, urutan_foto).
---     no_tilang | urutan_foto | tanggal    | nrp_petugas | nama_petugas     | jenis_foto | nama_file
---     TL-001    | 1           | 2026-03-04 | 80091312    | Septa Firmansyah | Kendaraan  | ae1270cr_depan.jpg
---     TL-001    | 2           | 2026-03-04 | 80091312    | Septa Firmansyah | Plat Nomor | ae1270cr_plat.jpg
---     TL-001    | 3           | 2026-03-04 | 80091312    | Septa Firmansyah | Situasi    | ae1270cr_situasi.jpg
+--   1NF : satu baris = satu foto di satu pelanggaran.
+--         Kunci (no_referensi_sistem, urutan_foto).
+--     no_referensi_sistem | urutan_foto | id_kamera   | lokasi_kamera                 | waktu_capture       | kecepatan | jenis_foto | nama_file
+--     910-50639-AE1270CR  | 1           | CAM-TOL-548 | SPEEDCAM TOL KM 548+450 A JSN | 2026-03-04 09:42:11 | 144       | Kendaraan  | ae1270cr_depan.jpg
+--     910-50639-AE1270CR  | 2           | CAM-TOL-548 | SPEEDCAM TOL KM 548+450 A JSN | 2026-03-04 09:42:11 | 144       | Plat Nomor | ae1270cr_plat.jpg
+--     910-50639-AE1270CR  | 3           | CAM-TOL-548 | SPEEDCAM TOL KM 548+450 A JSN | 2026-03-04 09:42:11 | 144       | Situasi    | ae1270cr_situasi.jpg
 --
---   2NF : tanggal, nrp_petugas, nama_petugas hanya bergantung pada no_tilang
---         (sebagian kunci), jadi dipindah ke tabel PELANGGARAN.
---     BUKTI_FOTO (no_tilang, urutan_foto, jenis_foto, nama_file, ukuran_kb, waktu_rekam)
+--   2NF : id_kamera, lokasi_kamera, waktu_capture, kecepatan hanya bergantung
+--         pada no_referensi_sistem (sebagian kunci), jadi dipindah ke tabel
+--         DETAIL_PELANGGARAN. BUKTI_FOTO hanya menyimpan atribut yang
+--         bergantung pada seluruh kunci:
+--     BUKTI_FOTO (no_referensi_sistem, urutan_foto, jenis_foto, nama_file, ukuran_kb, waktu_rekam)
 --
---   3NF : nama_petugas bergantung pada nrp_petugas, bukan langsung pada no_tilang
---         (transitif), jadi dipindah ke tabel PETUGAS. Hasil akhir: PETUGAS,
---         PELANGGARAN, BUKTI_FOTO (sesuai database kelompok + 1 tabel baru).
+--   3NF : lokasi_kamera bergantung pada id_kamera, bukan langsung pada
+--         no_referensi_sistem (transitif), jadi dipisah ke tabel KAMERA.
+--         Hasil akhir: KAMERA, ATURAN_PASAL, DETAIL_PELANGGARAN, BUKTI_FOTO.
 
-
-
-/* =====================================================================
-   TAHAP 3 - PEMODELAN FISIK (DDL)
-   ===================================================================== */
-
-CREATE DATABASE IF NOT EXISTS db_etle_remedi;
-USE db_etle_remedi;
+-- =====================================================================
+-- TAHAP 3 - PEMODELAN FISIK (DDL)
+-- =====================================================================
+DROP DATABASE IF EXISTS etle_remedi;
+CREATE DATABASE etle_remedi;
+USE etle_remedi;
 
 -- ---------------------------------------------------------------------
--- A. STRUKTUR BASIS DATA KELOMPOK (REPLIKA)
+-- A. STRUKTUR DATABASE UTS (REPLIKA)
 -- ---------------------------------------------------------------------
 
--- 1. TABEL
-CREATE TABLE petugas (
-  nrp           VARCHAR(20)  PRIMARY KEY,
-  nama_petugas  VARCHAR(100) NOT NULL,
-  pangkat       VARCHAR(50)
-) ENGINE=InnoDB;
+-- Tabel Induk 1
+CREATE TABLE kamera (
+    id_kamera        VARCHAR(20)  NOT NULL,
+    lokasi_kamera    VARCHAR(150) NOT NULL,
+    batas_kecepatan  SMALLINT UNSIGNED NOT NULL,  -- km/jam
+    PRIMARY KEY (id_kamera)
+);
 
-CREATE TABLE kendaraan (
-  nomor_polisi    VARCHAR(15) PRIMARY KEY,
-  jenis_kendaraan VARCHAR(10) NOT NULL,
-  merk            VARCHAR(50),
-  nama_pemilik    VARCHAR(100),
-  alamat_pemilik  VARCHAR(200),
-  CONSTRAINT chk_jenis CHECK (jenis_kendaraan IN ('Roda 2','Roda 4'))
-) ENGINE=InnoDB;
+-- Tabel Induk 2
+CREATE TABLE aturan_pasal (
+    kode_pelanggaran      VARCHAR(10)  NOT NULL,
+    kategori_pelanggaran  VARCHAR(100) NOT NULL,
+    pasal_pelanggaran     VARCHAR(255) NOT NULL,
+    PRIMARY KEY (kode_pelanggaran)
+);
 
--- Spesialisasi kendaraan
-CREATE TABLE roda_2 (
-  nomor_polisi VARCHAR(15) PRIMARY KEY,
-  kapasitas_cc INT,
-  tipe_motor   VARCHAR(50)
-) ENGINE=InnoDB;
-
-CREATE TABLE roda_4 (
-  nomor_polisi VARCHAR(15) PRIMARY KEY,
-  jumlah_sumbu INT,
-  jbb_kg       INT
-) ENGINE=InnoDB;
-
-CREATE TABLE jenis_pelanggaran (
-  kode_pasal    VARCHAR(10)  PRIMARY KEY,
-  deskripsi     VARCHAR(200),
-  denda_dasar   INT,
-  berlaku_untuk VARCHAR(50)
-) ENGINE=InnoDB;
-
-CREATE TABLE pelanggaran (
-  no_tilang    VARCHAR(30) PRIMARY KEY,
-  no_referensi VARCHAR(30),
-  tanggal      DATE,
-  nrp_petugas  VARCHAR(20),
-  nomor_polisi VARCHAR(15)
-) ENGINE=InnoDB;
-
-CREATE TABLE pelanggaran_jenis (
-  no_tilang  VARCHAR(30) NOT NULL,
-  kode_pasal VARCHAR(10) NOT NULL,
-  PRIMARY KEY (no_tilang, kode_pasal)
-) ENGINE=InnoDB;
-
--- Tabel rekapitulasi (denormalisasi terkontrol)
-CREATE TABLE rekap_pelanggaran_harian (
-  tanggal     DATE        NOT NULL,
-  kode_pasal  VARCHAR(10) NOT NULL,
-  jumlah      INT         NOT NULL DEFAULT 0,
-  total_denda BIGINT      NOT NULL DEFAULT 0,
-  PRIMARY KEY (tanggal, kode_pasal)
-) ENGINE=InnoDB;
-
--- 2. INDEX
-CREATE INDEX idx_kendaraan_nama_pemilik ON kendaraan(nama_pemilik);
-CREATE INDEX idx_pelanggaran_tanggal    ON pelanggaran(tanggal);
-CREATE INDEX idx_pelanggaran_nrp        ON pelanggaran(nrp_petugas);
-CREATE INDEX idx_pelanggaran_nopol      ON pelanggaran(nomor_polisi);
-CREATE INDEX idx_pj_kode_pasal          ON pelanggaran_jenis(kode_pasal);
-
--- 3. RELASI (FOREIGN KEY)
-ALTER TABLE pelanggaran
-  ADD CONSTRAINT fk_pelanggaran_petugas
-  FOREIGN KEY (nrp_petugas) REFERENCES petugas(nrp)
-  ON DELETE RESTRICT ON UPDATE CASCADE;
-
-ALTER TABLE pelanggaran
-  ADD CONSTRAINT fk_pelanggaran_kendaraan
-  FOREIGN KEY (nomor_polisi) REFERENCES kendaraan(nomor_polisi)
-  ON DELETE RESTRICT ON UPDATE CASCADE;
-
-ALTER TABLE roda_2
-  ADD CONSTRAINT fk_roda2_kendaraan
-  FOREIGN KEY (nomor_polisi) REFERENCES kendaraan(nomor_polisi)
-  ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE roda_4
-  ADD CONSTRAINT fk_roda4_kendaraan
-  FOREIGN KEY (nomor_polisi) REFERENCES kendaraan(nomor_polisi)
-  ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE pelanggaran_jenis
-  ADD CONSTRAINT fk_pj_pelanggaran
-  FOREIGN KEY (no_tilang) REFERENCES pelanggaran(no_tilang)
-  ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE pelanggaran_jenis
-  ADD CONSTRAINT fk_pj_jenis
-  FOREIGN KEY (kode_pasal) REFERENCES jenis_pelanggaran(kode_pasal)
-  ON DELETE RESTRICT ON UPDATE CASCADE;
-
-ALTER TABLE rekap_pelanggaran_harian
-  ADD CONSTRAINT fk_rekap_pasal
-  FOREIGN KEY (kode_pasal) REFERENCES jenis_pelanggaran(kode_pasal)
-  ON DELETE RESTRICT ON UPDATE CASCADE;
-
+-- Tabel Transaksi
+CREATE TABLE detail_pelanggaran (
+    no_referensi_sistem  VARCHAR(40)  NOT NULL,
+    id_kamera            VARCHAR(20)  NOT NULL,
+    kode_pelanggaran     VARCHAR(10)  NOT NULL,
+    waktu_capture        DATETIME     NOT NULL,
+    kecepatan_tercatat   SMALLINT UNSIGNED NOT NULL,  -- km/jam
+    PRIMARY KEY (no_referensi_sistem),
+    CONSTRAINT fk_detail_kamera
+        FOREIGN KEY (id_kamera) REFERENCES kamera(id_kamera)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_detail_pasal
+        FOREIGN KEY (kode_pelanggaran) REFERENCES aturan_pasal(kode_pelanggaran)
+        ON UPDATE CASCADE ON DELETE RESTRICT
+);
 
 -- ---------------------------------------------------------------------
 -- B. TABEL TAMBAHAN REMEDI: bukti_foto (ENTITAS LEMAH)
 -- ---------------------------------------------------------------------
 CREATE TABLE bukti_foto (
-  no_tilang    VARCHAR(30)  NOT NULL,
-  urutan_foto  TINYINT      NOT NULL,
-  jenis_foto   VARCHAR(20)  NOT NULL,
-  nama_file    VARCHAR(150) NOT NULL,
-  ukuran_kb    INT          NOT NULL,
-  waktu_rekam  DATETIME     NOT NULL,
-  PRIMARY KEY (no_tilang, urutan_foto),
-  CONSTRAINT chk_urutan_foto CHECK (urutan_foto BETWEEN 1 AND 10),
-  CONSTRAINT chk_jenis_foto  CHECK (jenis_foto IN ('Kendaraan','Plat Nomor','Situasi')),
-  CONSTRAINT chk_ukuran_kb   CHECK (ukuran_kb > 0),
-  CONSTRAINT uq_nama_file    UNIQUE (nama_file),
-  CONSTRAINT fk_bukti_pelanggaran FOREIGN KEY (no_tilang)
-    REFERENCES pelanggaran(no_tilang)
-    ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB;
+    no_referensi_sistem  VARCHAR(40)  NOT NULL,
+    urutan_foto          TINYINT UNSIGNED NOT NULL,
+    jenis_foto           VARCHAR(20)  NOT NULL,
+    nama_file            VARCHAR(150) NOT NULL,
+    ukuran_kb            INT UNSIGNED NOT NULL,
+    waktu_rekam          DATETIME     NOT NULL,
+    PRIMARY KEY (no_referensi_sistem, urutan_foto),
+    CONSTRAINT chk_urutan_foto CHECK (urutan_foto BETWEEN 1 AND 10),
+    CONSTRAINT chk_jenis_foto  CHECK (jenis_foto IN ('Kendaraan','Plat Nomor','Situasi')),
+    CONSTRAINT chk_ukuran_kb   CHECK (ukuran_kb > 0),
+    CONSTRAINT uq_nama_file    UNIQUE (nama_file),
+    CONSTRAINT fk_bukti_detail
+        FOREIGN KEY (no_referensi_sistem) REFERENCES detail_pelanggaran(no_referensi_sistem)
+        ON UPDATE CASCADE ON DELETE CASCADE
+);
 
 -- ---------------------------------------------------------------------
--- C. INDEX TABEL TAMBAHAN
+-- C. INDEX
 -- ---------------------------------------------------------------------
 CREATE INDEX idx_bukti_waktu ON bukti_foto(waktu_rekam);
+
+-- ---------------------------------------------------------------------
+-- D. DATA UJI
+-- ---------------------------------------------------------------------
+INSERT INTO kamera (id_kamera, lokasi_kamera, batas_kecepatan) VALUES
+('CAM-TOL-548', 'SPEEDCAM TOL KM 548+450 A JSN', 120),
+('CAM-TOL-549', 'SPEEDCAM TOL KM 548+300 A JSN', 120),
+('CAM-MDN-001', 'SPEEDCAM JL. A. YANI MADIUN', 60);
+
+INSERT INTO aturan_pasal (kode_pelanggaran, kategori_pelanggaran, pasal_pelanggaran) VALUES
+('PLG-01', 'Melanggar Batas Kecepatan', 'Pasal 287 ayat (5) jo Pasal 106'),
+('PLG-02', 'Tidak Menggunakan Sabuk Pengaman', 'Pasal 289'),
+('PLG-03', 'Menerobos Lampu Merah', 'Pasal 287 ayat (2)');
+
+INSERT INTO detail_pelanggaran
+(no_referensi_sistem, id_kamera, kode_pelanggaran, waktu_capture, kecepatan_tercatat) VALUES
+('910-50639-AE1270CR', 'CAM-TOL-548', 'PLG-01', '2026-03-04 09:42:11', 144),
+('910-50640-AE1270CR', 'CAM-TOL-548', 'PLG-02', '2026-03-04 09:42:11', 144),
+('910-50641-N4321AB',  'CAM-MDN-001', 'PLG-03', '2026-03-05 07:15:20', 35);
+
+INSERT INTO bukti_foto
+(no_referensi_sistem, urutan_foto, jenis_foto, nama_file, ukuran_kb, waktu_rekam) VALUES
+('910-50639-AE1270CR', 1, 'Kendaraan',  'ae1270cr_depan.jpg',   820,  '2026-03-04 09:42:11'),
+('910-50639-AE1270CR', 2, 'Plat Nomor', 'ae1270cr_plat.jpg',    310,  '2026-03-04 09:42:11'),
+('910-50639-AE1270CR', 3, 'Situasi',    'ae1270cr_situasi.jpg', 1050, '2026-03-04 09:42:12'),
+('910-50641-N4321AB',  1, 'Plat Nomor', 'n4321ab_plat.jpg',     295,  '2026-03-05 07:15:20');
+
+-- ---------------------------------------------------------------------
+-- E. PENGUJIAN
+-- ---------------------------------------------------------------------
+-- [READ] pelanggaran beserta jumlah foto buktinya
+SELECT d.no_referensi_sistem, k.lokasi_kamera, d.waktu_capture,
+       d.kecepatan_tercatat, COUNT(b.urutan_foto) AS jumlah_foto
+FROM detail_pelanggaran d
+JOIN kamera k ON d.id_kamera = k.id_kamera
+LEFT JOIN bukti_foto b ON b.no_referensi_sistem = d.no_referensi_sistem
+GROUP BY d.no_referensi_sistem, k.lokasi_kamera, d.waktu_capture, d.kecepatan_tercatat;
+
+-- [DELETE] uji CASCADE: foto ikut terhapus bersama pelanggarannya
+DELETE FROM detail_pelanggaran WHERE no_referensi_sistem = '910-50641-N4321AB';
+SELECT * FROM bukti_foto;
