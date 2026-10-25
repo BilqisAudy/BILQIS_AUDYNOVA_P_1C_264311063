@@ -52,4 +52,4 @@ erDiagram
 
 `BUKTI_FOTO` adalah **entitas lemah**: tidak dapat berdiri sendiri tanpa `DETAIL_PELANGGARAN`, sehingga primary key-nya gabungan (`no_referensi_sistem` + `urutan_foto`).
 
-Script SQL: [uts_remedi_bilqis.sql](uts_remedi_bilqis.sql)
+Script SQL: [Remedial_UTS_ddl.sql](Remedial_UTS_ddl.sql)
