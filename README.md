@@ -52,4 +52,81 @@ erDiagram
 
 `BUKTI_FOTO` adalah **entitas lemah**: tidak dapat berdiri sendiri tanpa `DETAIL_PELANGGARAN`, sehingga primary key-nya gabungan (`no_referensi_sistem` + `urutan_foto`).
 
+## 2. Pemodelan Logis
+
+### a. Skema Relasional
+
+```
+KAMERA             (id_kamera PK, lokasi_kamera, batas_kecepatan)
+ATURAN_PASAL       (kode_pelanggaran PK, kategori_pelanggaran, pasal_pelanggaran)
+DETAIL_PELANGGARAN (no_referensi_sistem PK, id_kamera FK, kode_pelanggaran FK,
+                    waktu_capture, kecepatan_tercatat)
+BUKTI_FOTO         (no_referensi_sistem PK/FK, urutan_foto PK, jenis_foto,
+                    nama_file, ukuran_kb, waktu_rekam)          <- tabel baru
+```
+
+### b. Normalisasi (UNF sampai 3NF)
+
+Contoh data: satu pelanggaran dengan 3 foto bukti.
+
+#### UNF
+Satu baris pelanggaran berisi banyak foto sekaligus (kelompok berulang).
+
+| no_referensi_sistem | id_kamera | lokasi_kamera | waktu_capture | kecepatan | foto |
+|---|---|---|---|---|---|
+| 910-50639-AE1270CR | CAM-TOL-548 | SPEEDCAM TOL KM 548+450 A JSN | 2026-03-04 09:42:11 | 144 | (1 Kendaraan: ae1270cr_depan.jpg), (2 Plat Nomor: ae1270cr_plat.jpg), (3 Situasi: ae1270cr_situasi.jpg) |
+
+#### 1NF
+Satu baris = satu foto di satu pelanggaran. Kunci gabungan: (no_referensi_sistem, urutan_foto).
+
+| no_referensi_sistem | urutan_foto | id_kamera | lokasi_kamera | waktu_capture | kecepatan | jenis_foto | nama_file |
+|---|---|---|---|---|---|---|---|
+| 910-50639-AE1270CR | 1 | CAM-TOL-548 | SPEEDCAM TOL KM 548+450 A JSN | 2026-03-04 09:42:11 | 144 | Kendaraan | ae1270cr_depan.jpg |
+| 910-50639-AE1270CR | 2 | CAM-TOL-548 | SPEEDCAM TOL KM 548+450 A JSN | 2026-03-04 09:42:11 | 144 | Plat Nomor | ae1270cr_plat.jpg |
+| 910-50639-AE1270CR | 3 | CAM-TOL-548 | SPEEDCAM TOL KM 548+450 A JSN | 2026-03-04 09:42:11 | 144 | Situasi | ae1270cr_situasi.jpg |
+
+Masalah: data kamera dan waktu capture terulang di setiap foto (redundansi).
+
+#### 2NF
+`id_kamera`, `lokasi_kamera`, `waktu_capture`, dan `kecepatan` hanya bergantung pada `no_referensi_sistem` (sebagian kunci), sehingga dipindah ke tabel DETAIL_PELANGGARAN.
+
+**DETAIL_PELANGGARAN**
+
+| no_referensi_sistem (PK) | id_kamera | lokasi_kamera | waktu_capture | kecepatan |
+|---|---|---|---|---|
+| 910-50639-AE1270CR | CAM-TOL-548 | SPEEDCAM TOL KM 548+450 A JSN | 2026-03-04 09:42:11 | 144 |
+
+**BUKTI_FOTO**
+
+| no_referensi_sistem (PK, FK) | urutan_foto (PK) | jenis_foto | nama_file |
+|---|---|---|---|
+| 910-50639-AE1270CR | 1 | Kendaraan | ae1270cr_depan.jpg |
+| 910-50639-AE1270CR | 2 | Plat Nomor | ae1270cr_plat.jpg |
+| 910-50639-AE1270CR | 3 | Situasi | ae1270cr_situasi.jpg |
+
+#### 3NF
+`lokasi_kamera` bergantung pada `id_kamera`, bukan langsung pada `no_referensi_sistem` (ketergantungan transitif), sehingga dipisah ke tabel KAMERA.
+
+**KAMERA**
+
+| id_kamera (PK) | lokasi_kamera | batas_kecepatan |
+|---|---|---|
+| CAM-TOL-548 | SPEEDCAM TOL KM 548+450 A JSN | 120 |
+
+**DETAIL_PELANGGARAN**
+
+| no_referensi_sistem (PK) | id_kamera (FK) | waktu_capture | kecepatan_tercatat |
+|---|---|---|---|
+| 910-50639-AE1270CR | CAM-TOL-548 | 2026-03-04 09:42:11 | 144 |
+
+**BUKTI_FOTO** (tidak berubah)
+
+| no_referensi_sistem (PK, FK) | urutan_foto (PK) | jenis_foto | nama_file |
+|---|---|---|---|
+| 910-50639-AE1270CR | 1 | Kendaraan | ae1270cr_depan.jpg |
+| 910-50639-AE1270CR | 2 | Plat Nomor | ae1270cr_plat.jpg |
+| 910-50639-AE1270CR | 3 | Situasi | ae1270cr_situasi.jpg |
+
+**Hasil akhir 3NF:** KAMERA, ATURAN_PASAL, DETAIL_PELANGGARAN, dan BUKTI_FOTO. Tidak ada lagi pengulangan data kamera di setiap foto, dan semua atribut non-kunci bergantung penuh pada kunci.
+
 Script SQL: [Remedial_UTS_ddl.sql](Remedial_UTS_ddl.sql)
